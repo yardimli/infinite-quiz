@@ -160,6 +160,7 @@
 			}
 
 			Log::info("LLM Request to {$llm_base_url} ({$llm_model})");
+			Log::info('LLM Request Data', ['data' => $data]);
 			$attempt = 0;
 			$last_error = null;
 

@@ -45,13 +45,30 @@
                         <div class="card bg-base-100 shadow-xl">
                             <div class="card-body">
                                 <h2 class="card-title">{{ $quiz->prompt }}</h2>
-                                <div class="text-sm text-base-content/60">Model: {{ $quiz->llm_model }}</div>
+                                {{-- Modified: Added a section for metadata including model, creation, and last accessed time. --}}
+                                <div class="text-sm text-base-content/60">
+                                    <span>Model: {{ $quiz->llm_model }}</span>
+                                    <span class="mx-2">|</span>
+                                    <span>Created: {{ $quiz->created_at->diffForHumans() }}</span>
+                                    <span class="mx-2">|</span>
+                                    <span>Last Accessed: {{ $quiz->updated_at->diffForHumans() }}</span>
+                                </div>
                                 @php
                                     $answeredCount = $quiz->questions->whereNotNull('user_choice')->count();
                                     $correctCount = $quiz->questions->where('is_correct', true)->count();
                                     $wrongCount = $quiz->questions->where('is_correct', false)->count();
                                     $percentage = $answeredCount > 0 ? round(($correctCount / $answeredCount) * 100) : 0;
+                                    $goal = 50;
                                 @endphp
+                                
+                                <div class="my-2">
+                                    <label for="quiz-progress-{{ $quiz->id }}" class="label px-0">
+                                        <span class="label-text font-semibold">Goal Progress</span>
+                                        <span class="label-text-alt font-semibold">{{ $correctCount }}/{{ $goal }}</span>
+                                    </label>
+                                    <progress id="quiz-progress-{{ $quiz->id }}" class="progress progress-primary w-full" value="{{ $correctCount }}" max="{{ $goal }}"></progress>
+                                </div>
+                                
                                 <p>Answered: {{ $answeredCount }} | Correct: {{ $correctCount }} | Wrong: {{ $wrongCount }} | Score: {{ $percentage }}%</p>
                                 <div class="card-actions justify-end">
                                     <a href="{{ route('quiz.show', $quiz) }}" class="btn btn-primary">

@@ -1,5 +1,6 @@
 <h3 class="text-lg font-semibold">{{ $question->question_text }}</h3>
-<form action="{{ route('quiz.answer', [$quiz, $question]) }}" method="POST" class="mt-4">
+{{-- Add an ID to the form for easier selection in JavaScript --}}
+<form id="question-form" action="{{ route('quiz.answer', [$quiz, $question]) }}" method="POST" class="mt-4">
 	@csrf
 	<div class="space-y-4">
 		@foreach ($question->options as $option)

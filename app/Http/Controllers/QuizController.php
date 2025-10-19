@@ -30,14 +30,17 @@
 		{
 			$this->authorize('view', $quiz);
 
+			// Eager load questions to calculate initial score
+			$quiz->load('questions');
+
 			// Check if there's an unanswered question first
-			$unansweredQuestion = $quiz->questions()->whereNull('user_choice')->first();
+			$unansweredQuestion = $quiz->questions()->whereNull('user_choice')->orderBy('created_at', 'desc')->first();
 
 			if ($unansweredQuestion) {
 				return view('quiz.show', ['quiz' => $quiz, 'question' => $unansweredQuestion]);
 			}
 
-			// If no unanswered questions, generate a new one
+			// If no unanswered questions, the view will trigger generation
 			return view('quiz.show', ['quiz' => $quiz]);
 		}
 
@@ -49,19 +52,32 @@
 				'answer' => 'required|string',
 			]);
 
+			// Prevent answering the same question twice
+			if ($question->user_choice !== null) {
+				return response()->json(['error' => 'This question has already been answered.'], 400);
+			}
+
+			$is_correct = $request->answer === $question->correct_answer;
+
 			$question->update([
 				'user_choice' => $request->answer,
-				'is_correct' => $request->answer === $question->correct_answer,
+				'is_correct' => $is_correct,
 			]);
 
-			return redirect()->route('quiz.show', $quiz);
+			// Return the result and the new total of correct answers for the quiz
+			return response()->json([
+				'is_correct' => $is_correct,
+				'correct_answer' => $question->correct_answer,
+				'correct_count' => $quiz->questions()->where('is_correct', true)->count(),
+			]);
 		}
 
 		public function generate(Quiz $quiz)
 		{
 			$this->authorize('update', $quiz);
 
-			$system_prompt = "You are a quiz generation assistant. Based on the user's topic and the history of previous questions, create a new, unique, multiple-choice question. The question should have 4 possible answers.
+			// Modified system prompt to ask LLM to adjust difficulty
+			$system_prompt = "You are a quiz generation assistant. Based on the user's topic and the history of previous questions (including whether the user answered correctly), create a new, unique, multiple-choice question. The question should have 4 possible answers. Adjust the difficulty of the new question based on the user's performance; if they are answering correctly, make the next question slightly harder. If they are struggling, make it slightly easier.
         Respond ONLY with a valid JSON object in the following format:
         {\"question\": \"The text of the question\", \"options\": [\"Answer A\", \"Answer B\", \"Answer C\", \"Answer D\"], \"correct_answer\": \"The correct answer text which must be one of the options\"}";
 
@@ -69,12 +85,13 @@
 				return [
 					'question' => $q->question_text,
 					'user_answered' => $q->user_choice,
-					'was_correct' => $q->is_correct
+					'was_correct' => $q->is_correct, // Pass/fail result
 				];
 			})->toArray();
 
+			// Modified user prompt to include performance context
 			$chat_messages = [
-				['role' => 'user', 'content' => "The quiz topic is: '{$quiz->prompt}'. The following questions have already been asked: " . json_encode($previous_questions) . ". Please generate the next question."]
+				['role' => 'user', 'content' => "The quiz topic is: '{$quiz->prompt}'. The user's performance on previous questions is as follows: " . json_encode($previous_questions) . ". Please generate the next question, adjusting the difficulty based on their performance."]
 			];
 
 			$llmResult = LlmHelper::llm_no_tool_call($quiz->llm_model, $system_prompt, $chat_messages);
