@@ -14,12 +14,10 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
-    {{-- Modified section: Updated the theme initializer to support multiple themes and default to cupcake. --}}
     <script>
-        // Immediately invoked function to set the theme on initial load to prevent FOUC (Flash of Unstyled Content).
         (function() {
             const storageKey = 'theme';
-            const defaultTheme = 'cupcake'; // New: Set cupcake as the default theme.
+            const defaultTheme = 'cupcake';
             const availableThemes = ['light', 'dark', 'cupcake'];
             
             // Get the theme from localStorage.
@@ -38,13 +36,11 @@
     </script>
 </head>
 <body class="font-sans antialiased">
-{{-- Use DaisyUI base colors for theme compatibility --}}
 <div class="min-h-screen bg-base-200">
     @include('layouts.navigation')
     
     <!-- Page Heading -->
     @hasSection('header')
-        {{-- Use DaisyUI base colors --}}
         <header class="bg-base-100 shadow">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 @yield('header')

@@ -197,7 +197,6 @@
 						return ['content' => $content];
 					}
 
-					// --- Simplified JSON Processing ---
 					$decoded_json = json_decode($content, true);
 
 					// Check if json_decode was successful

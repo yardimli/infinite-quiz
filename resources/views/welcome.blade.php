@@ -12,24 +12,17 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
-    {{-- Modified section: Updated the theme initializer to support three themes and default to cupcake. --}}
-    <!-- Theme Initializer Script -->
     <script>
-        // Immediately invoked function to set the theme on initial load to prevent FOUC (Flash of Unstyled Content).
         (function() {
             const storageKey = 'theme';
             const defaultTheme = 'cupcake'; // Set cupcake as the default theme.
             const availableThemes = ['light', 'dark', 'cupcake'];
             
-            // Get the theme from localStorage.
             const storedTheme = localStorage.getItem(storageKey);
             
-            // Check if the stored theme is one of the available themes.
             if (storedTheme && availableThemes.includes(storedTheme)) {
-                // If a valid theme is stored, apply it.
                 document.documentElement.setAttribute('data-theme', storedTheme);
             } else {
-                // Otherwise, fall back to the user's system preference for dark mode, or the default theme.
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : defaultTheme);
             }
@@ -48,7 +41,6 @@
                 </a>
             </div>
             <div class="navbar-end">
-                {{-- Modified section: Replaced the theme toggle with a dropdown for multiple themes. --}}
                 <div class="dropdown dropdown-end mr-4">
                     <button tabindex="0" role="button" class="btn btn-ghost">
                         Theme

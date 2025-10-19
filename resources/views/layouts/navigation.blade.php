@@ -12,7 +12,6 @@
                 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    {{-- Replaced x-nav-link with a standard anchor tag and conditional classes --}}
                     @php
                         $activeClasses = 'inline-flex items-center px-1 pt-1 border-b-2 border-indigo-400 text-sm font-medium leading-5 text-base-content focus:outline-none focus:border-indigo-700 transition duration-150 ease-in-out';
                         $inactiveClasses = 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-base-content/80 hover:text-base-content hover:border-base-300 focus:outline-none focus:text-base-content focus:border-base-300 transition duration-150 ease-in-out';
@@ -25,7 +24,6 @@
             
             <!-- Right side of Navbar -->
             <div class="flex items-center sm:ms-6">
-                {{-- Modified section: Replaced the theme switcher with a dropdown for multiple themes. --}}
                 <div class="dropdown dropdown-end mr-4">
                     <button tabindex="0" role="button" class="btn btn-ghost">
                         Theme
@@ -71,7 +69,6 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-3">
-                        {{-- Replaced x-responsive-nav-link --}}
                         <li>
                             <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">{{ __('Dashboard') }}</a>
                         </li>

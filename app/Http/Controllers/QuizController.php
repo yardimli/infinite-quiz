@@ -2,7 +2,7 @@
 
 	namespace App\Http\Controllers;
 
-	use App\Helpers\LlmHelper; // Import the helper
+	use App\Helpers\LlmHelper;
 	use App\Models\Question;
 	use App\Models\Quiz;
 	use Illuminate\Http\Request;
@@ -15,12 +15,12 @@
 		{
 			$request->validate([
 				'prompt' => 'required|string|max:1000',
-				'llm_model' => 'required|string|max:255', // Validate the model
+				'llm_model' => 'required|string|max:255',
 			]);
 
 			$quiz = auth()->user()->quizzes()->create([
 				'prompt' => $request->prompt,
-				'llm_model' => $request->llm_model, // Save the model
+				'llm_model' => $request->llm_model,
 			]);
 
 			return redirect()->route('quiz.show', $quiz);
@@ -77,8 +77,6 @@
 				['role' => 'user', 'content' => "The quiz topic is: '{$quiz->prompt}'. The following questions have already been asked: " . json_encode($previous_questions) . ". Please generate the next question."]
 			];
 
-			// Modified section: Added a comment to note that API keys should be handled in the helper via .env.
-			// Note: The LlmHelper should be configured to use any required API keys from the .env file.
 			$llmResult = LlmHelper::llm_no_tool_call($quiz->llm_model, $system_prompt, $chat_messages);
 
 			if (isset($llmResult['error']) || !isset($llmResult['question'])) {

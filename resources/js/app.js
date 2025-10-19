@@ -1,7 +1,5 @@
 import './bootstrap';
 
-// Modified section: Replaced the old theme controller with a more robust theme manager for multiple themes.
-
 /**
  * Manages theme selection, application, and persistence in localStorage.
  */

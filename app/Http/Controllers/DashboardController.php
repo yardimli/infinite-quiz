@@ -10,10 +10,13 @@
 		public function index()
 		{
 			$quizzes = auth()->user()->quizzes()->with('questions')->latest()->get();
-			// Modified section: Added a comment to note that API keys should be handled in the helper via .env.
-			// Note: The LlmHelper should be configured to use any required API keys from the .env file for security and flexibility.
+
 			$llmModels = LlmHelper::getVerifiedGroupedModels(); // Get the models
 
-			return view('dashboard', compact('quizzes', 'llmModels')); // Pass them to the view
+			// Get the default model from the environment file.
+			$defaultLlm = env('DEFAULT_LLM');
+
+			// Pass all necessary data to the view, including the default model.
+			return view('dashboard', compact('quizzes', 'llmModels', 'defaultLlm'));
 		}
 	}

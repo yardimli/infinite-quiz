@@ -20,7 +20,6 @@
 		return view('welcome');
 	});
 
-// Modified section: Removed a duplicate dashboard route definition that was pointing to a closure instead of the controller.
 	Route::middleware('auth')->group(function () {
 		Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 		Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -31,7 +30,7 @@
 		Route::get('/quiz/create', [QuizController::class, 'create'])->name('quiz.create');
 		Route::post('/quiz', [QuizController::class, 'store'])->name('quiz.store');
 		Route::get('/quiz/{quiz}', [QuizController::class, 'show'])->name('quiz.show');
-		Route::post('/quiz/{quiz}/generate', [QuizController::class, 'generate'])->name('quiz.generate'); // New AJAX route
+		Route::post('/quiz/{quiz}/generate', [QuizController::class, 'generate'])->name('quiz.generate');
 		Route::post('/quiz/{quiz}/question/{question}/answer', [QuizController::class, 'answer'])->name('quiz.answer');
 	});
 

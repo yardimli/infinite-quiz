@@ -6,25 +6,25 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-base-100 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    {{-- Modified form to be centered and have a max-width --}}
                     <form action="{{ route('quiz.store') }}" method="POST" class="max-w-xl mx-auto">
                         @csrf
                         <div class="form-control">
                             <label class="label" for="prompt">
                                 <span class="label-text">What subject do you want a quiz on?</span>
                             </label>
-                            {{-- Made the textarea larger by adding h-40 --}}
                             <textarea id="prompt" class="textarea textarea-bordered h-20 w-full" name="prompt" placeholder="e.g., 'The Roman Empire' or 'Quantum Physics'" required>{{ old('prompt') }}</textarea>
                         </div>
                         
-                        {{-- Removed the label from the dropdown and adjusted margin --}}
                         <div class="form-control mt-4">
+                            {{-- The select input for the AI model --}}
                             <select name="llm_model" id="llm_model" class="select select-bordered w-full" required>
-                                <option disabled selected>Choose an AI Model</option>
+                                {{-- The placeholder option is selected only if no default model is provided from the controller --}}
+                                <option disabled @empty($defaultLlm) selected @endempty>Choose an AI Model</option>
                                 @foreach ($llmModels as $group)
                                     <optgroup label="{{ $group['group'] }}">
                                         @foreach ($group['models'] as $model)
-                                            <option value="{{ $model['id'] }}">{{ $model['name'] }}</option>
+                                            {{-- This option is selected if its ID matches the default LLM from the environment variables --}}
+                                            <option value="{{ $model['id'] }}" @if(isset($defaultLlm) && $model['id'] === $defaultLlm) selected @endif>{{ $model['name'] }}</option>
                                         @endforeach
                                     </optgroup>
                                 @endforeach
