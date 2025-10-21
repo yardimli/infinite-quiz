@@ -255,7 +255,7 @@
 				
 				JEELIZGLANCETRACKER.init({
 					canvasId: 'jeelizGlanceTrackerCanvas',
-					NNCPath: '/js/NNC.json',
+					NNCPath: '/js/',
 					// Modified: Replaced callbackGazeOn/callbackGazeOff with the correct callbackTrack function.
 					// This is the mandatory callback function required by the library.
 					callbackTrack: function (isWatching) {
