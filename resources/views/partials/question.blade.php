@@ -1,4 +1,4 @@
-<h3 class="text-lg font-semibold">{{ $question->question_text }}</h3>
+<h3 class="text-xl font-semibold">{{ $question->question_text }}</h3>
 {{--
     Modified: All inline style attributes have been removed.
     This allows the JavaScript in the parent view to fully control the layout (either ordered or floating)

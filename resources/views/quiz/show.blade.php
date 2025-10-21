@@ -44,11 +44,12 @@
 						</label>
 					</div>
 					
-					{{-- Gaze Delay Input --}}
+					{{-- Modified: Gaze Delay Input replaced with Sensibility Slider --}}
 					<div class="form-control">
 						<label class="label justify-start gap-x-2">
-							<span class="label-text">Delay (ms):</span>
-							<input type="number" id="gaze-delay-input" class="input input-bordered w-24" value="500" min="0" step="100">
+							<span class="label-text">Sensibility:</span>
+							<input type="range" id="gaze-sensibility-input" class="range range-xs w-24" value="0.2" min="0" max="1" step="0.1" />
+							<span id="gaze-sensibility-value" class="label-text font-mono w-8 text-center">0.2</span>
 						</label>
 					</div>
 				</div>
@@ -148,7 +149,7 @@
 				// Set the form as the positioning canvas.
 				form.style.position = 'relative';
 				form.style.width = '600px';
-				form.style.height = '250px';
+				form.style.height = '300px';
 				
 				// Position the submit button within the canvas.
 				const submitContainer = form.querySelector('button[type="submit"]').parentElement;
@@ -218,14 +219,16 @@
 			floatingAnswersToggle.checked = savedLayoutPreference === null ? true : (savedLayoutPreference === 'true');
 			// --- End of layout management logic ---
 			
-			// --- Added: Gaze Tracking Logic ---
+			// --- Modified: Gaze Tracking Logic ---
 			const gazeTrackingToggle = document.getElementById('gaze-tracking-toggle');
-			const gazeDelayInput = document.getElementById('gaze-delay-input');
+			// New: Selectors for the new sensibility input and its value display.
+			const gazeSensibilityInput = document.getElementById('gaze-sensibility-input');
+			const gazeSensibilityValue = document.getElementById('gaze-sensibility-value');
 			const gazeOverlay = document.getElementById('gaze-overlay');
 			const gazeTrackerCanvas = document.getElementById('jeelizGlanceTrackerCanvas');
 			const gazeStorageKey = 'quizGazeTrackingEnabled';
-			const gazeDelayStorageKey = 'quizGazeTrackingDelay';
-			let gazeTimer = null;
+			// New: Storage key for the sensibility value.
+			const gazeSensibilityStorageKey = 'quizGazeTrackingSensibility';
 			let isGazeTrackerInitialized = false;
 			
 			/**
@@ -253,24 +256,21 @@
 					return;
 				}
 				
+				// New: Read sensibility from the input for initialization.
+				const sensibility = parseFloat(gazeSensibilityInput.value);
+				
 				JEELIZGLANCETRACKER.init({
 					canvasId: 'jeelizGlanceTrackerCanvas',
 					NNCPath: '/js/',
-					// Modified: Replaced callbackGazeOn/callbackGazeOff with the correct callbackTrack function.
-					// This is the mandatory callback function required by the library.
+					// Modified: Use the dynamic sensibility value.
+					sensibility: sensibility,
+					isDisplayVideo: true,
 					callbackTrack: function (isWatching) {
 						if (isWatching) {
-							// This logic runs when the user is looking at the screen.
 							console.log("Gaze ON");
-							if (gazeTimer) clearTimeout(gazeTimer); // Restart countdown on re-glance.
-							// Start a timer to hide the overlay after the specified delay.
-							gazeTimer = setTimeout(() => {
-								hideGazeOverlay();
-							}, parseInt(gazeDelayInput.value, 10));
+							hideGazeOverlay();
 						} else {
-							// This logic runs when the user looks away.
 							console.log("Gaze OFF");
-							if (gazeTimer) clearTimeout(gazeTimer); // Cancel timer if user looks away.
 							showGazeOverlay();
 						}
 					},
@@ -279,7 +279,7 @@
 							console.error('Gaze Tracker initialization error:', error);
 							gazeTrackingToggle.checked = false;
 							gazeTrackingToggle.disabled = true;
-							gazeDelayInput.disabled = true;
+							gazeSensibilityInput.disabled = true;
 							alert('Could not initialize Gaze Tracker. Please ensure you have granted camera access.');
 							return;
 						}
@@ -298,7 +298,6 @@
 				if (isGazeTrackerInitialized) {
 					JEELIZGLANCETRACKER.toggle_pause(true, true);
 				}
-				if (gazeTimer) clearTimeout(gazeTimer);
 				hideGazeOverlay();
 				gazeTrackerCanvas.style.display = 'none';
 			}
@@ -314,17 +313,29 @@
 				}
 			});
 			
-			// Event listener for the delay input.
-			gazeDelayInput.addEventListener('input', function() {
-				localStorage.setItem(gazeDelayStorageKey, this.value);
+			// Modified: Event listener for the sensibility slider.
+			gazeSensibilityInput.addEventListener('input', function() {
+				// Update the displayed value as the slider moves.
+				gazeSensibilityValue.textContent = parseFloat(this.value).toFixed(1);
+			});
+			
+			// New: Event listener to save the value and refresh when the user finishes changing the slider.
+			gazeSensibilityInput.addEventListener('change', function() {
+				localStorage.setItem(gazeSensibilityStorageKey, this.value);
+				// Refresh the page to re-initialize the tracker with the new value.
+				location.reload();
 			});
 			
 			// On page load, set up gaze tracking based on stored preferences.
 			const savedGazePreference = localStorage.getItem(gazeStorageKey);
-			const savedGazeDelay = localStorage.getItem(gazeDelayStorageKey);
+			// New: Retrieve the saved sensibility value.
+			const savedGazeSensibility = localStorage.getItem(gazeSensibilityStorageKey);
 			
-			if (savedGazeDelay) {
-				gazeDelayInput.value = savedGazeDelay;
+			// New: Set the slider and text to the saved value, or the default.
+			if (savedGazeSensibility) {
+				const sensibility = parseFloat(savedGazeSensibility).toFixed(1);
+				gazeSensibilityInput.value = sensibility;
+				gazeSensibilityValue.textContent = sensibility;
 			}
 			
 			gazeTrackingToggle.checked = savedGazePreference === 'true'; // Default to false.
