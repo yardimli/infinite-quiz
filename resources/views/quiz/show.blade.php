@@ -13,10 +13,12 @@
 		$goal = $quiz->question_goal;
 	@endphp
 	
+	{{-- Added: The canvas required by the gaze tracker library. It's positioned at the bottom right. --}}
+	<canvas id="jeelizGlanceTrackerCanvas" class="fixed bottom-4 right-4 w-48 h-36 z-20 rounded-lg shadow-lg border-2 border-base-100" style="display: none;"></canvas>
+	
 	<div class="py-12">
 		<div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 			
-			{{-- Modified: Added a checkbox to toggle the answer layout. --}}
 			<div class="mb-4 p-4 bg-base-100 rounded-lg shadow-sm">
 				<label for="quiz-progress" class="label">
 					<span class="label-text font-semibold">Progress</span>
@@ -24,17 +26,37 @@
 				</label>
 				<progress id="quiz-progress" class="progress progress-primary w-full" value="{{ $correctCount }}" max="{{ $goal }}"></progress>
 				
-				{{-- Added: A checkbox to control the answer layout, with persistence via localStorage. --}}
 				<div class="form-control mt-4">
 					<label class="label cursor-pointer justify-start gap-4">
 						<input type="checkbox" id="floating-answers-toggle" class="checkbox checkbox-primary" />
 						<span class="label-text">Enable Floating Answers</span>
 					</label>
 				</div>
+				
+				{{-- Added: A checkbox and input to control gaze tracking and its delay. --}}
+				<div class="form-control mt-4 border-t border-base-300 pt-4">
+					<label class="label cursor-pointer justify-start gap-4">
+						<input type="checkbox" id="gaze-tracking-toggle" class="checkbox checkbox-primary" />
+						<span class="label-text">Enable Gaze Tracking (Requires Camera)</span>
+					</label>
+					<label class="label mt-2">
+						<span class="label-text">Look-to-interact delay (ms)</span>
+					</label>
+					<input type="number" id="gaze-delay-input" class="input input-bordered w-full max-w-xs" value="500" min="0" step="100">
+				</div>
 			</div>
 			
 			<div class="bg-base-100 overflow-hidden shadow-sm sm:rounded-lg">
-				<div class="p-6 min-h-[20rem] flex items-center justify-center">
+				{{-- Modified: Added id="quiz-container" and position relative for the gaze tracking overlay. --}}
+				<div id="quiz-container" class="relative p-6 min-h-[20rem] flex items-center justify-center">
+					{{-- Added: Gaze tracking overlay that covers the quiz area when the user looks away. --}}
+					<div id="gaze-overlay" class="absolute inset-0 bg-base-300/90 z-10 hidden items-center justify-center text-center rounded-lg">
+						<div>
+							<p class="text-xl font-semibold">Please look at the screen to continue.</p>
+							<span class="loading loading-dots loading-md mt-4"></span>
+						</div>
+					</div>
+					
 					<div id="quiz-area">
 						@if(isset($question))
 							@include('partials.question', ['quiz' => $quiz, 'question' => $question])
@@ -59,6 +81,9 @@
 			</div>
 		</div>
 	</dialog>
+	
+	{{-- Added: Include the Jeeliz Glance Tracker library from CDN. --}}
+	<script src="/js/jeelizGlanceTracker.js"></script>
 	
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
@@ -184,6 +209,121 @@
 			const savedLayoutPreference = localStorage.getItem(layoutStorageKey);
 			floatingAnswersToggle.checked = savedLayoutPreference === null ? true : (savedLayoutPreference === 'true');
 			// --- End of layout management logic ---
+			
+			// --- Added: Gaze Tracking Logic ---
+			const gazeTrackingToggle = document.getElementById('gaze-tracking-toggle');
+			const gazeDelayInput = document.getElementById('gaze-delay-input');
+			const gazeOverlay = document.getElementById('gaze-overlay');
+			const gazeTrackerCanvas = document.getElementById('jeelizGlanceTrackerCanvas');
+			const gazeStorageKey = 'quizGazeTrackingEnabled';
+			const gazeDelayStorageKey = 'quizGazeTrackingDelay';
+			let gazeTimer = null;
+			let isGazeTrackerInitialized = false;
+			
+			/**
+			 * Shows the gaze overlay.
+			 */
+			function showGazeOverlay() {
+				gazeOverlay.classList.remove('hidden');
+				gazeOverlay.classList.add('flex'); // Use flex to center content.
+			}
+			
+			/**
+			 * Hides the gaze overlay.
+			 */
+			function hideGazeOverlay() {
+				gazeOverlay.classList.add('hidden');
+				gazeOverlay.classList.remove('flex');
+			}
+			
+			/**
+			 * Initializes the Jeeliz Glance Tracker library.
+			 */
+			function initializeGazeTracker() {
+				if (isGazeTrackerInitialized) {
+					JEELIZGLANCETRACKER.toggle_pause(false, true); // Resume if already initialized.
+					return;
+				}
+				
+				JEELIZGLANCETRACKER.init({
+					canvasId: 'jeelizGlanceTrackerCanvas',
+					NNCPath: 'https://appstatic.jeeliz.com/glanceTracker/NNC.json',
+					callbackGazeOn: () => {
+						console.log("Gaze ON");
+						if (gazeTimer) clearTimeout(gazeTimer); // Restart countdown on re-glance.
+						// Start a timer to hide the overlay after the specified delay.
+						gazeTimer = setTimeout(() => {
+							hideGazeOverlay();
+						}, parseInt(gazeDelayInput.value, 10));
+					},
+					callbackGazeOff: () => {
+						console.log("Gaze OFF");
+						if (gazeTimer) clearTimeout(gazeTimer); // Cancel timer if user looks away.
+						showGazeOverlay();
+					},
+					callbackReady: (error) => {
+						if (error) {
+							console.error('Gaze Tracker initialization error:', error);
+							gazeTrackingToggle.checked = false;
+							gazeTrackingToggle.disabled = true;
+							gazeDelayInput.disabled = true;
+							alert('Could not initialize Gaze Tracker. Please ensure you have granted camera access.');
+							return;
+						}
+						console.log('Gaze Tracker is ready.');
+						isGazeTrackerInitialized = true;
+						JEELIZGLANCETRACKER.toggle_pause(false, true); // Start the tracker.
+						showGazeOverlay(); // Show overlay initially until gaze is detected.
+					}
+				});
+			}
+			
+			/**
+			 * Pauses the gaze tracker and hides the overlay and canvas.
+			 */
+			function pauseGazeTracker() {
+				if (isGazeTrackerInitialized) {
+					JEELIZGLANCETRACKER.toggle_pause(true, true);
+				}
+				if (gazeTimer) clearTimeout(gazeTimer);
+				hideGazeOverlay();
+				gazeTrackerCanvas.style.display = 'none';
+			}
+			
+			// Event listener for the gaze tracking toggle.
+			gazeTrackingToggle.addEventListener('change', function() {
+				localStorage.setItem(gazeStorageKey, this.checked);
+				if (this.checked) {
+					gazeTrackerCanvas.style.display = 'block';
+					initializeGazeTracker();
+				} else {
+					pauseGazeTracker();
+				}
+			});
+			
+			// Event listener for the delay input.
+			gazeDelayInput.addEventListener('input', function() {
+				localStorage.setItem(gazeDelayStorageKey, this.value);
+			});
+			
+			// On page load, set up gaze tracking based on stored preferences.
+			const savedGazePreference = localStorage.getItem(gazeStorageKey);
+			const savedGazeDelay = localStorage.getItem(gazeDelayStorageKey);
+			
+			if (savedGazeDelay) {
+				gazeDelayInput.value = savedGazeDelay;
+			}
+			
+			gazeTrackingToggle.checked = savedGazePreference === 'true'; // Default to false.
+			
+			// Initialize if it was enabled on last visit.
+			if (gazeTrackingToggle.checked) {
+				gazeTrackerCanvas.style.display = 'block';
+				initializeGazeTracker();
+			} else {
+				gazeTrackerCanvas.style.display = 'none';
+			}
+			// --- End of Gaze Tracking Logic ---
 			
 			function checkCompletion() {
 				if (correctAnswers >= goal) {
