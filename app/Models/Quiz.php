@@ -11,13 +11,15 @@
 	{
 		use HasFactory;
 
+// Modified: Added 'question_goal' to the list of mass-assignable attributes.
 		protected $fillable = [
 			'user_id',
 			'prompt',
-			'llm_model', // Add this line
+			'llm_model',
+			'question_goal',
 		];
 
-		// ... rest of the model is unchanged
+// ... rest of the model is unchanged
 		public function user(): BelongsTo
 		{
 			return $this->belongsTo(User::class);

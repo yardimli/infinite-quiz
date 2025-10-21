@@ -15,8 +15,19 @@
                             <textarea id="prompt" class="textarea textarea-bordered h-20 w-full" name="prompt" placeholder="e.g., 'The Roman Empire' or 'Quantum Physics'" required>{{ old('prompt') }}</textarea>
                         </div>
                         
+                        {{-- Added: Input for the user to define the quiz length. --}}
+                        <div class="form-control mt-4">
+                            <label class="label" for="question_goal">
+                                <span class="label-text">How many questions to complete the quiz?</span>
+                            </label>
+                            <input type="number" id="question_goal" name="question_goal" class="input input-bordered w-full" value="20" min="1" max="100" required>
+                        </div>
+                        
                         <div class="form-control mt-4">
                             {{-- The select input for the AI model --}}
+                            <label class="label" for="llm_model">
+                                <span class="label-text">Choose an AI Model</span>
+                            </label>
                             <select name="llm_model" id="llm_model" class="select select-bordered w-full" required>
                                 {{-- The placeholder option is selected only if no default model is provided from the controller --}}
                                 <option disabled @empty($defaultLlm) selected @endempty>Choose an AI Model</option>
@@ -45,7 +56,6 @@
                         <div class="card bg-base-100 shadow-xl">
                             <div class="card-body">
                                 <h2 class="card-title">{{ $quiz->prompt }}</h2>
-                                {{-- Modified: Added a section for metadata including model, creation, and last accessed time. --}}
                                 <div class="text-sm text-base-content/60">
                                     <span>Model: {{ $quiz->llm_model }}</span>
                                     <span class="mx-2">|</span>
@@ -55,10 +65,11 @@
                                 </div>
                                 @php
                                     $answeredCount = $quiz->questions->whereNotNull('user_choice')->count();
-                                    $correctCount = $quiz->questions->where('is_correct', true)->count();
-                                    $wrongCount = $quiz->questions->where('is_correct', false)->count();
-                                    $percentage = $answeredCount > 0 ? round(($correctCount / $answeredCount) * 100) : 0;
-                                    $goal = 50;
+																		$correctCount = $quiz->questions->where('is_correct', true)->count();
+																		$wrongCount = $quiz->questions->where('is_correct', false)->count();
+																		$percentage = $answeredCount > 0 ? round(($correctCount / $answeredCount) * 100) : 0;
+																		// Modified: The goal is now read from each specific quiz object.
+																		$goal = $quiz->question_goal;
                                 @endphp
                                 
                                 <div class="my-2">
