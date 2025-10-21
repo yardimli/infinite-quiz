@@ -16,7 +16,7 @@
 	{{-- Added: The canvas required by the gaze tracker library. It's positioned at the bottom right. --}}
 	<canvas id="jeelizGlanceTrackerCanvas" class="fixed bottom-4 right-4 w-48 h-36 z-20 rounded-lg shadow-lg border-2 border-base-100" style="display: none;"></canvas>
 	
-	<div class="py-12">
+	<div class="py-6">
 		<div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 			
 			<div class="mb-4 p-4 bg-base-100 rounded-lg shadow-sm">
@@ -26,23 +26,31 @@
 				</label>
 				<progress id="quiz-progress" class="progress progress-primary w-full" value="{{ $correctCount }}" max="{{ $goal }}"></progress>
 				
-				<div class="form-control mt-4">
-					<label class="label cursor-pointer justify-start gap-4">
-						<input type="checkbox" id="floating-answers-toggle" class="checkbox checkbox-primary" />
-						<span class="label-text">Enable Floating Answers</span>
-					</label>
-				</div>
-				
-				{{-- Added: A checkbox and input to control gaze tracking and its delay. --}}
-				<div class="form-control mt-4 border-t border-base-300 pt-4">
-					<label class="label cursor-pointer justify-start gap-4">
-						<input type="checkbox" id="gaze-tracking-toggle" class="checkbox checkbox-primary" />
-						<span class="label-text">Enable Gaze Tracking (Requires Camera)</span>
-					</label>
-					<label class="label mt-2">
-						<span class="label-text">Look-to-interact delay (ms)</span>
-					</label>
-					<input type="number" id="gaze-delay-input" class="input input-bordered w-full max-w-xs" value="500" min="0" step="100">
+				{{-- Modified: The layout controls are now in a single horizontal flex container. --}}
+				<div class="mt-4 border-t border-base-300 pt-4 flex flex-wrap items-center gap-x-8 gap-y-2">
+					{{-- Floating Answers Toggle --}}
+					<div class="form-control">
+						<label class="label cursor-pointer justify-start gap-4">
+							<input type="checkbox" id="floating-answers-toggle" class="checkbox checkbox-primary" />
+							<span class="label-text">Enable Floating Answers</span>
+						</label>
+					</div>
+					
+					{{-- Gaze Tracking Toggle --}}
+					<div class="form-control">
+						<label class="label cursor-pointer justify-start gap-4">
+							<input type="checkbox" id="gaze-tracking-toggle" class="checkbox checkbox-primary" />
+							<span class="label-text">Enable Gaze Tracking</span>
+						</label>
+					</div>
+					
+					{{-- Gaze Delay Input --}}
+					<div class="form-control">
+						<label class="label justify-start gap-x-2">
+							<span class="label-text">Delay (ms):</span>
+							<input type="number" id="gaze-delay-input" class="input input-bordered w-24" value="500" min="0" step="100">
+						</label>
+					</div>
 				</div>
 			</div>
 			
@@ -248,18 +256,23 @@
 				JEELIZGLANCETRACKER.init({
 					canvasId: 'jeelizGlanceTrackerCanvas',
 					NNCPath: 'https://appstatic.jeeliz.com/glanceTracker/NNC.json',
-					callbackGazeOn: () => {
-						console.log("Gaze ON");
-						if (gazeTimer) clearTimeout(gazeTimer); // Restart countdown on re-glance.
-						// Start a timer to hide the overlay after the specified delay.
-						gazeTimer = setTimeout(() => {
-							hideGazeOverlay();
-						}, parseInt(gazeDelayInput.value, 10));
-					},
-					callbackGazeOff: () => {
-						console.log("Gaze OFF");
-						if (gazeTimer) clearTimeout(gazeTimer); // Cancel timer if user looks away.
-						showGazeOverlay();
+					// Modified: Replaced callbackGazeOn/callbackGazeOff with the correct callbackTrack function.
+					// This is the mandatory callback function required by the library.
+					callbackTrack: function (isWatching) {
+						if (isWatching) {
+							// This logic runs when the user is looking at the screen.
+							console.log("Gaze ON");
+							if (gazeTimer) clearTimeout(gazeTimer); // Restart countdown on re-glance.
+							// Start a timer to hide the overlay after the specified delay.
+							gazeTimer = setTimeout(() => {
+								hideGazeOverlay();
+							}, parseInt(gazeDelayInput.value, 10));
+						} else {
+							// This logic runs when the user looks away.
+							console.log("Gaze OFF");
+							if (gazeTimer) clearTimeout(gazeTimer); // Cancel timer if user looks away.
+							showGazeOverlay();
+						}
 					},
 					callbackReady: (error) => {
 						if (error) {
