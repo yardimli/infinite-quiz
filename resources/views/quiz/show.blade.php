@@ -13,7 +13,6 @@
 		$goal = $quiz->question_goal;
 	@endphp
 	
-	{{-- Added: The canvas required by the gaze tracker library. It's positioned at the bottom right. --}}
 	<canvas id="jeelizGlanceTrackerCanvas" class="fixed bottom-4 right-4 w-48 h-36 z-20 rounded-lg shadow-lg border-2 border-base-100" style="display: none;"></canvas>
 	
 	<div class="py-6">
@@ -44,6 +43,14 @@
 						</label>
 					</div>
 					
+					{{-- Added: Checkbox to control the visibility of the video feed. --}}
+					<div class="form-control">
+						<label class="label cursor-pointer justify-start gap-4">
+							<input type="checkbox" id="gaze-display-video-toggle" class="checkbox checkbox-primary" />
+							<span class="label-text">Display Video Feed</span>
+						</label>
+					</div>
+					
 					{{-- Modified: Gaze Delay Input replaced with Sensibility Slider --}}
 					<div class="form-control">
 						<label class="label justify-start gap-x-2">
@@ -56,12 +63,10 @@
 			</div>
 			
 			<div class="bg-base-100 overflow-hidden shadow-sm sm:rounded-lg">
-				{{-- Modified: Added id="quiz-container" and position relative for the gaze tracking overlay. --}}
 				<div id="quiz-container" class="relative p-6 min-h-[20rem] flex items-center justify-center">
-					{{-- Added: Gaze tracking overlay that covers the quiz area when the user looks away. --}}
-					<div id="gaze-overlay" class="absolute inset-0 bg-base-300/90 z-10 hidden items-center justify-center text-center rounded-lg">
+					<div id="gaze-overlay" class="absolute inset-0 bg-base-300/20 z-10 hidden items-center justify-center text-center rounded-lg">
 						<div>
-							<p class="text-xl font-semibold">Please look at the screen to continue.</p>
+							<p class="text-xl font-semibold">look at the screen.</p>
 							<span class="loading loading-dots loading-md mt-4"></span>
 						</div>
 					</div>
@@ -221,13 +226,13 @@
 			
 			// --- Modified: Gaze Tracking Logic ---
 			const gazeTrackingToggle = document.getElementById('gaze-tracking-toggle');
-			// New: Selectors for the new sensibility input and its value display.
+			const gazeDisplayVideoToggle = document.getElementById('gaze-display-video-toggle'); // New: Selector for the video display toggle.
 			const gazeSensibilityInput = document.getElementById('gaze-sensibility-input');
 			const gazeSensibilityValue = document.getElementById('gaze-sensibility-value');
 			const gazeOverlay = document.getElementById('gaze-overlay');
 			const gazeTrackerCanvas = document.getElementById('jeelizGlanceTrackerCanvas');
 			const gazeStorageKey = 'quizGazeTrackingEnabled';
-			// New: Storage key for the sensibility value.
+			const displayVideoStorageKey = 'quizGazeDisplayVideoEnabled'; // New: Storage key for video display preference.
 			const gazeSensibilityStorageKey = 'quizGazeTrackingSensibility';
 			let isGazeTrackerInitialized = false;
 			
@@ -256,15 +261,14 @@
 					return;
 				}
 				
-				// New: Read sensibility from the input for initialization.
 				const sensibility = parseFloat(gazeSensibilityInput.value);
+				const isDisplayVideo = gazeDisplayVideoToggle.checked; // New: Get video display state from its checkbox.
 				
 				JEELIZGLANCETRACKER.init({
 					canvasId: 'jeelizGlanceTrackerCanvas',
 					NNCPath: '/js/',
-					// Modified: Use the dynamic sensibility value.
 					sensibility: sensibility,
-					isDisplayVideo: true,
+					isDisplayVideo: isDisplayVideo, // Modified: Use the dynamic value from the checkbox.
 					callbackTrack: function (isWatching) {
 						if (isWatching) {
 							console.log("Gaze ON");
@@ -280,6 +284,7 @@
 							gazeTrackingToggle.checked = false;
 							gazeTrackingToggle.disabled = true;
 							gazeSensibilityInput.disabled = true;
+							gazeDisplayVideoToggle.disabled = true; // New: Disable video toggle on error.
 							alert('Could not initialize Gaze Tracker. Please ensure you have granted camera access.');
 							return;
 						}
@@ -313,13 +318,20 @@
 				}
 			});
 			
-			// Modified: Event listener for the sensibility slider.
+			// New: Event listener for the video display toggle.
+			gazeDisplayVideoToggle.addEventListener('change', function() {
+				localStorage.setItem(displayVideoStorageKey, this.checked);
+				// Refresh the page to re-initialize the tracker with the new setting.
+				location.reload();
+			});
+			
+			// Event listener for the sensibility slider.
 			gazeSensibilityInput.addEventListener('input', function() {
 				// Update the displayed value as the slider moves.
 				gazeSensibilityValue.textContent = parseFloat(this.value).toFixed(1);
 			});
 			
-			// New: Event listener to save the value and refresh when the user finishes changing the slider.
+			// Event listener to save the value and refresh when the user finishes changing the slider.
 			gazeSensibilityInput.addEventListener('change', function() {
 				localStorage.setItem(gazeSensibilityStorageKey, this.value);
 				// Refresh the page to re-initialize the tracker with the new value.
@@ -328,15 +340,18 @@
 			
 			// On page load, set up gaze tracking based on stored preferences.
 			const savedGazePreference = localStorage.getItem(gazeStorageKey);
-			// New: Retrieve the saved sensibility value.
 			const savedGazeSensibility = localStorage.getItem(gazeSensibilityStorageKey);
+			const savedDisplayVideoPreference = localStorage.getItem(displayVideoStorageKey); // New: Retrieve saved video display preference.
 			
-			// New: Set the slider and text to the saved value, or the default.
+			// Set the slider and text to the saved value, or the default.
 			if (savedGazeSensibility) {
 				const sensibility = parseFloat(savedGazeSensibility).toFixed(1);
 				gazeSensibilityInput.value = sensibility;
 				gazeSensibilityValue.textContent = sensibility;
 			}
+			
+			// New: Set the video display checkbox state from localStorage, defaulting to true.
+			gazeDisplayVideoToggle.checked = savedDisplayVideoPreference === null ? true : (savedDisplayVideoPreference === 'true');
 			
 			gazeTrackingToggle.checked = savedGazePreference === 'true'; // Default to false.
 			

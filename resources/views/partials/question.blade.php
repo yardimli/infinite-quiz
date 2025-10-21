@@ -1,9 +1,4 @@
-<h3 class="text-xl font-semibold">{{ $question->question_text }}</h3>
-{{--
-    Modified: All inline style attributes have been removed.
-    This allows the JavaScript in the parent view to fully control the layout (either ordered or floating)
-    without conflicting styles. The form is now a clean structure.
---}}
+<h3 class="text-3xl font-semibold">{{ $question->question_text }}</h3>
 <form id="question-form" action="{{ route('quiz.answer', [$quiz, $question]) }}" method="POST" class="mt-4">
 	@csrf
 	<div class="space-y-4">
