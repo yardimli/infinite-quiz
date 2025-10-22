@@ -25,7 +25,7 @@
 				</label>
 				<progress id="quiz-progress" class="progress progress-primary w-full" value="{{ $correctCount }}" max="{{ $goal }}"></progress>
 				
-				{{-- Modified: The "Floating Answers" toggle has been removed as this view is dedicated to that layout. --}}
+				{{-- Modified: The controls section now includes padding inputs for the floating layout. --}}
 				<div class="mt-4 border-t border-base-300 pt-4 flex flex-wrap items-center gap-x-8 gap-y-2">
 					{{-- Gaze Tracking Toggle --}}
 					<div class="form-control">
@@ -35,7 +35,7 @@
 						</label>
 					</div>
 					
-					{{-- Added: Checkbox to control the visibility of the video feed. --}}
+					{{-- Checkbox to control the visibility of the video feed. --}}
 					<div class="form-control">
 						<label class="label cursor-pointer justify-start gap-4">
 							<input type="checkbox" id="gaze-display-video-toggle" class="checkbox checkbox-primary" />
@@ -43,12 +43,26 @@
 						</label>
 					</div>
 					
-					{{-- Modified: Gaze Delay Input replaced with Sensibility Slider --}}
+					{{-- Gaze Delay Input replaced with Sensibility Slider --}}
 					<div class="form-control">
 						<label class="label justify-start gap-x-2">
 							<span class="label-text">Sensibility:</span>
 							<input type="range" id="gaze-sensibility-input" class="range range-xs w-24" value="0.2" min="0" max="1" step="0.1" />
 							<span id="gaze-sensibility-value" class="label-text font-mono w-8 text-center">0.2</span>
+						</label>
+					</div>
+					
+					{{-- Added: Inputs for horizontal and vertical padding for floating answers. --}}
+					<div class="form-control">
+						<label class="label justify-start gap-x-2">
+							<span class="label-text">H-Padding:</span>
+							<input type="number" id="h-padding-input" class="input input-bordered input-sm w-20" value="15" min="0" max="100">
+						</label>
+					</div>
+					<div class="form-control">
+						<label class="label justify-start gap-x-2">
+							<span class="label-text">V-Padding:</span>
+							<input type="number" id="v-padding-input" class="input input-bordered input-sm w-20" value="15" min="0" max="100">
 						</label>
 					</div>
 				</div>
@@ -88,7 +102,6 @@
 		</div>
 	</dialog>
 	
-	{{-- Added: Include the Jeeliz Glance Tracker library from CDN. --}}
 	<script src="/js/jeelizGlanceTracker.js"></script>
 	
 	<script>
@@ -104,6 +117,10 @@
 			let correctAnswers = {{ $correctCount }};
 			
 			// --- Modified: Layout management logic for floating answers only. ---
+			const hPaddingInput = document.getElementById('h-padding-input'); // Added
+			const vPaddingInput = document.getElementById('v-padding-input'); // Added
+			const hPaddingStorageKey = 'quizHPadding'; // Added
+			const vPaddingStorageKey = 'quizVPadding'; // Added
 			
 			/**
 			 * Applies absolute positioning to randomize the layout of answer options.
@@ -131,13 +148,21 @@
 				const containerHeight = 200;
 				const placedElements = [];
 				
+				/**
+				 * Modified: checkOverlap now uses configurable padding values from the new inputs.
+				 * @param {object} rect1 - The bounding box of the first element.
+				 * @param {object} rect2 - The bounding box of the second element.
+				 * @returns {boolean} - True if the elements overlap.
+				 */
 				function checkOverlap(rect1, rect2) {
-					const padding = 5;
+					// New: Get horizontal and vertical padding values from the input fields, with a default fallback.
+					const hPadding = parseInt(hPaddingInput.value, 10) || 5;
+					const vPadding = parseInt(vPaddingInput.value, 10) || 5;
 					return (
-						rect1.left < rect2.right + padding &&
-						rect1.right > rect2.left - padding &&
-						rect1.top < rect2.bottom + padding &&
-						rect1.bottom > rect2.top - padding
+						rect1.left < rect2.right + hPadding &&
+						rect1.right > rect2.left - hPadding &&
+						rect1.top < rect2.bottom + vPadding &&
+						rect1.bottom > rect2.top - vPadding
 					);
 				}
 				
@@ -164,7 +189,7 @@
 			}
 			
 			/**
-			 * Applies the floating layout. The toggle and local storage have been removed.
+			 * Applies the floating layout.
 			 * @param {HTMLElement} container - The element containing the question form.
 			 */
 			function applyAnswerLayout(container) {
@@ -285,14 +310,39 @@
 			}
 			// --- End of Gaze Tracking Logic ---
 			
+			// Added: Event listeners and localStorage logic for padding inputs.
+			hPaddingInput.addEventListener('change', function() {
+				localStorage.setItem(hPaddingStorageKey, this.value);
+				if (quizArea.innerHTML.trim() !== '' && spinner.classList.contains('hidden')) {
+					applyAnswerLayout(quizArea); // Re-apply layout when padding changes.
+				}
+			});
+			
+			vPaddingInput.addEventListener('change', function() {
+				localStorage.setItem(vPaddingStorageKey, this.value);
+				if (quizArea.innerHTML.trim() !== '' && spinner.classList.contains('hidden')) {
+					applyAnswerLayout(quizArea); // Re-apply layout when padding changes.
+				}
+			});
+			
+			const savedHPadding = localStorage.getItem(hPaddingStorageKey);
+			const savedVPadding = localStorage.getItem(vPaddingStorageKey);
+			
+			if (savedHPadding) {
+				hPaddingInput.value = savedHPadding;
+			}
+			
+			if (savedVPadding) {
+				vPaddingInput.value = savedVPadding;
+			}
+			
 			/**
-			 * Modified: Handles the "Slow Question Show" feature, now with configurable word count.
+			 * Handles the "Slow Question Show" feature, now with configurable word count.
 			 * If enabled, it reveals the question word by word (or in chunks).
 			 * @param {HTMLElement} container - The element containing the question.
 			 */
 			function initSlowShow(container) {
 				const slowShowEnabled = localStorage.getItem('slowShowEnabled') === 'true';
-				// New: Get the number of words to show per click from localStorage.
 				const wordsPerClick = parseInt(localStorage.getItem('slowShowWords') || '1', 10);
 				
 				if (!slowShowEnabled) {
@@ -354,27 +404,22 @@
 				}
 				
 				/**
-				 * Modified: This function now reveals a batch of words based on the 'wordsPerClick' setting.
+				 * This function now reveals a batch of words based on the 'wordsPerClick' setting.
 				 */
 				function advanceWord() {
 					if (currentWordIndex < wordSpans.length) {
-						// New: Calculate the end index for the batch of words to reveal.
 						const endIndex = Math.min(currentWordIndex + wordsPerClick, wordSpans.length);
 						
-						// New: Loop through the batch and reveal each word.
 						for (let i = currentWordIndex; i < endIndex; i++) {
 							wordSpans[i].classList.remove('opacity-5');
 							wordSpans[i].classList.add('opacity-100');
 						}
 						
-						// New: Update the current word index to the new position.
 						currentWordIndex = endIndex;
 						
 						if (currentWordIndex < wordSpans.length) {
-							// If there's a next word, reposition the button.
 							positionButton();
 						} else {
-							// Last word has been revealed.
 							nextWordButton.remove();
 							questionForm.style.visibility = 'visible';
 						}
@@ -383,7 +428,6 @@
 				
 				nextWordButton.addEventListener('click', advanceWord);
 				
-				// Use a short timeout to ensure the DOM has rendered the spans before calculating their positions.
 				setTimeout(positionButton, 100);
 			}
 			
@@ -397,7 +441,7 @@
 			
 			if (quizArea.innerHTML.trim() !== '') {
 				applyAnswerLayout(quizArea);
-				initSlowShow(quizArea); // Modified: Initialize slow show for the first question.
+				initSlowShow(quizArea);
 			} else {
 				generateNewQuestion();
 			}
@@ -481,7 +525,7 @@
 							quizArea.innerHTML = data.question_html;
 							requestAnimationFrame(() => {
 								applyAnswerLayout(quizArea);
-								initSlowShow(quizArea); // Modified: Initialize slow show for the new question.
+								initSlowShow(quizArea);
 							});
 						}
 					})
