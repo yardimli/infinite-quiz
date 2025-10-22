@@ -6,7 +6,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-base-100 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <form action="{{ route('quiz.store') }}" method="POST" class="max-w-xl mx-auto">
+                    <form action="{{ route('quiz.store') }}" method="POST" class="max-w-4xl mx-auto">
                         @csrf
                         <div class="form-control">
                             <label class="label" for="prompt">
@@ -15,34 +15,46 @@
                             <textarea id="prompt" class="textarea textarea-bordered h-20 w-full" name="prompt" placeholder="e.g., 'The Roman Empire' or 'Quantum Physics'" required>{{ old('prompt') }}</textarea>
                         </div>
                         
-                        {{-- Added: Input for the user to define the quiz length. --}}
-                        <div class="form-control mt-4">
-                            <label class="label" for="question_goal">
-                                <span class="label-text">How many questions to complete the quiz?</span>
-                            </label>
-                            <input type="number" id="question_goal" name="question_goal" class="input input-bordered w-full" value="20" min="1" max="100" required>
-                        </div>
-                        
-                        <div class="form-control mt-4">
+                        {{-- Modified: Grouped inputs for questions, answers, and model into a single row. --}}
+                        <div class="flex flex-col md:flex-row gap-4 mt-4">
+                            
+                            {{-- Input for the user to define the quiz length. --}}
+                            <div class="form-control flex-1">
+                                <label class="label" for="question_goal">
+                                    <span class="label-text"># of Questions</span>
+                                </label>
+                                <input type="number" id="question_goal" name="question_goal" class="input input-bordered w-full" value="20" min="1" max="100" required>
+                            </div>
+                            
+                            {{-- Added: Input for the user to define the number of answers per question. --}}
+                            <div class="form-control flex-1">
+                                <label class="label" for="answer_count">
+                                    <span class="label-text"># of Answers</span>
+                                </label>
+                                <input type="number" id="answer_count" name="answer_count" class="input input-bordered w-full" value="4" min="2" max="6" required>
+                            </div>
+                            
                             {{-- The select input for the AI model --}}
-                            <label class="label" for="llm_model">
-                                <span class="label-text">Choose an AI Model</span>
-                            </label>
-                            <select name="llm_model" id="llm_model" class="select select-bordered w-full" required>
-                                {{-- The placeholder option is selected only if no default model is provided from the controller --}}
-                                <option disabled @empty($defaultLlm) selected @endempty>Choose an AI Model</option>
-                                @foreach ($llmModels as $group)
-                                    <optgroup label="{{ $group['group'] }}">
-                                        @foreach ($group['models'] as $model)
-                                            {{-- This option is selected if its ID matches the default LLM from the environment variables --}}
-                                            <option value="{{ $model['id'] }}" @if(isset($defaultLlm) && $model['id'] === $defaultLlm) selected @endif>{{ $model['name'] }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
+                            <div class="form-control flex-1">
+                                <label class="label" for="llm_model">
+                                    <span class="label-text">AI Model</span>
+                                </label>
+                                <select name="llm_model" id="llm_model" class="select select-bordered w-full" required>
+                                    {{-- The placeholder option is selected only if no default model is provided from the controller --}}
+                                    <option disabled @empty($defaultLlm) selected @endempty>Choose an AI Model</option>
+                                    @foreach ($llmModels as $group)
+                                        <optgroup label="{{ $group['group'] }}">
+                                            @foreach ($group['models'] as $model)
+                                                {{-- This option is selected if its ID matches the default LLM from the environment variables --}}
+                                                <option value="{{ $model['id'] }}" @if(isset($defaultLlm) && $model['id'] === $defaultLlm) selected @endif>{{ $model['name'] }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                         
-                        <div class="mt-4">
+                        <div class="mt-6">
                             <button type="submit" class="btn btn-primary">Create New Quiz</button>
                         </div>
                     </form>
