@@ -50,15 +50,23 @@
             </div>
             
             <div class="mt-8">
-                {{-- Modified: Added a flex container to align title and new checkbox. --}}
+                {{-- Modified: Added a flex container and an input for words per click. --}}
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold">Your Quizzes</h3>
-                    {{-- Added: Checkbox to toggle the "Slow Question Show" feature. --}}
-                    <div class="form-control">
-                        <label class="label cursor-pointer gap-2">
-                            <span class="label-text">Slow Question Show</span>
-                            <input type="checkbox" id="slow-show-toggle" class="checkbox checkbox-primary" />
-                        </label>
+                    <div class="flex items-center gap-4">
+                        <div class="form-control">
+                            <label class="label cursor-pointer gap-2">
+                                <span class="label-text">Slow Question Show</span>
+                                <input type="checkbox" id="slow-show-toggle" class="checkbox checkbox-primary" />
+                            </label>
+                        </div>
+                        {{-- New: Input to control the number of words shown per click. --}}
+                        <div class="form-control">
+                            <label class="label" for="slow-show-words">
+                                <span class="label-text">Words per click:</span>
+                            </label>
+                            <input type="number" id="slow-show-words" class="input input-bordered input-sm w-20" value="1" min="1" max="20">
+                        </div>
                     </div>
                 </div>
                 <div class="mt-4 grid gap-4">
@@ -110,19 +118,29 @@
         </div>
     </div>
     
-    {{-- Added: Script to manage the state of the "Slow Show" toggle. --}}
+    {{-- Modified: Script now manages the state for both the toggle and the new words-per-click input. --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const toggle = document.getElementById('slow-show-toggle');
-            const storageKey = 'slowShowEnabled';
+            const wordsInput = document.getElementById('slow-show-words'); // New: Get the number input.
+            const toggleStorageKey = 'slowShowEnabled';
+            const wordsStorageKey = 'slowShowWords'; // New: Storage key for word count.
             
-            if (toggle) {
-                // Set the toggle's initial state based on the value in localStorage.
-                toggle.checked = localStorage.getItem(storageKey) === 'true';
+            if (toggle && wordsInput) { // Modified: Check for both elements.
+                // Set the toggle's initial state from localStorage.
+                toggle.checked = localStorage.getItem(toggleStorageKey) === 'true';
+                
+                // New: Set the input's initial state from localStorage, or default to 1.
+                wordsInput.value = localStorage.getItem(wordsStorageKey) || '1';
                 
                 // Add an event listener to update localStorage when the toggle is changed.
                 toggle.addEventListener('change', function() {
-                    localStorage.setItem(storageKey, this.checked);
+                    localStorage.setItem(toggleStorageKey, this.checked);
+                });
+                
+                // New: Add an event listener to update localStorage when the number input is changed.
+                wordsInput.addEventListener('change', function() {
+                    localStorage.setItem(wordsStorageKey, this.value);
                 });
             }
         });

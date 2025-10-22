@@ -286,12 +286,15 @@
 			// --- End of Gaze Tracking Logic ---
 			
 			/**
-			 * Added: Handles the "Slow Question Show" feature.
-			 * If enabled, it reveals the question word by word.
+			 * Modified: Handles the "Slow Question Show" feature, now with configurable word count.
+			 * If enabled, it reveals the question word by word (or in chunks).
 			 * @param {HTMLElement} container - The element containing the question.
 			 */
 			function initSlowShow(container) {
 				const slowShowEnabled = localStorage.getItem('slowShowEnabled') === 'true';
+				// New: Get the number of words to show per click from localStorage.
+				const wordsPerClick = parseInt(localStorage.getItem('slowShowWords') || '1', 10);
+				
 				if (!slowShowEnabled) {
 					return; // Exit if the feature is not enabled.
 				}
@@ -350,13 +353,22 @@
 					nextWordButton.style.left = `${left}px`;
 				}
 				
+				/**
+				 * Modified: This function now reveals a batch of words based on the 'wordsPerClick' setting.
+				 */
 				function advanceWord() {
 					if (currentWordIndex < wordSpans.length) {
-						// Reveal the current word.
-						wordSpans[currentWordIndex].classList.remove('opacity-5');
-						wordSpans[currentWordIndex].classList.add('opacity-100');
+						// New: Calculate the end index for the batch of words to reveal.
+						const endIndex = Math.min(currentWordIndex + wordsPerClick, wordSpans.length);
 						
-						currentWordIndex++;
+						// New: Loop through the batch and reveal each word.
+						for (let i = currentWordIndex; i < endIndex; i++) {
+							wordSpans[i].classList.remove('opacity-5');
+							wordSpans[i].classList.add('opacity-100');
+						}
+						
+						// New: Update the current word index to the new position.
+						currentWordIndex = endIndex;
 						
 						if (currentWordIndex < wordSpans.length) {
 							// If there's a next word, reposition the button.

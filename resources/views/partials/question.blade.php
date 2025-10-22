@@ -5,7 +5,7 @@
 	<div class="space-y-4">
 		@foreach ($question->options as $option)
 			{{-- The 'question-option' class is used as a selector in JavaScript. --}}
-			<div class="form-control question-option">
+			<div class="form-control question-option text-xl">
 				<label class="label cursor-pointer justify-start gap-4">
 					<input type="radio" name="answer" value="{{ $option }}" class="radio checked:bg-blue-500" required />
 					<span class="label-text">{{ $option }}</span>
