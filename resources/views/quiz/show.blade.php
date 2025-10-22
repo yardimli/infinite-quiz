@@ -456,8 +456,12 @@
 							quizArea.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
 						} else {
 							quizArea.innerHTML = data.question_html;
-							// Modified: Apply the user-selected layout to the new question.
-							applyAnswerLayout(quizArea);
+							// Modified: Defer the layout calculation until after the browser has rendered the new
+							// elements. This ensures that functions like `offsetWidth` return the correct dimensions,
+							// preventing the overlapping of answer options in float mode.
+							requestAnimationFrame(() => {
+								applyAnswerLayout(quizArea);
+							});
 						}
 					})
 					.catch(error => {
