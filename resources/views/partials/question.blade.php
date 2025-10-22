@@ -1,4 +1,5 @@
-<h3 class="text-3xl font-semibold">{{ $question->question_text }}</h3>
+{{-- Modified: Added an ID to the h3 tag for easier JavaScript targeting. --}}
+<h3 id="question-text" class="text-3xl font-semibold">{{ $question->question_text }}</h3>
 <form id="question-form" action="{{ route('quiz.answer', [$quiz, $question]) }}" method="POST" class="mt-4">
 	@csrf
 	<div class="space-y-4">

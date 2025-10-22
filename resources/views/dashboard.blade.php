@@ -50,7 +50,17 @@
             </div>
             
             <div class="mt-8">
-                <h3 class="text-lg font-semibold">Your Quizzes</h3>
+                {{-- Modified: Added a flex container to align title and new checkbox. --}}
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold">Your Quizzes</h3>
+                    {{-- Added: Checkbox to toggle the "Slow Question Show" feature. --}}
+                    <div class="form-control">
+                        <label class="label cursor-pointer gap-2">
+                            <span class="label-text">Slow Question Show</span>
+                            <input type="checkbox" id="slow-show-toggle" class="checkbox checkbox-primary" />
+                        </label>
+                    </div>
+                </div>
                 <div class="mt-4 grid gap-4">
                     @forelse ($quizzes as $quiz)
                         <div class="card bg-base-100 shadow-xl">
@@ -99,4 +109,22 @@
             </div>
         </div>
     </div>
+    
+    {{-- Added: Script to manage the state of the "Slow Show" toggle. --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.getElementById('slow-show-toggle');
+            const storageKey = 'slowShowEnabled';
+            
+            if (toggle) {
+                // Set the toggle's initial state based on the value in localStorage.
+                toggle.checked = localStorage.getItem(storageKey) === 'true';
+                
+                // Add an event listener to update localStorage when the toggle is changed.
+                toggle.addEventListener('change', function() {
+                    localStorage.setItem(storageKey, this.checked);
+                });
+            }
+        });
+    </script>
 @endsection

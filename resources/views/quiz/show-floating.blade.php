@@ -285,6 +285,96 @@
 			}
 			// --- End of Gaze Tracking Logic ---
 			
+			/**
+			 * Added: Handles the "Slow Question Show" feature.
+			 * If enabled, it reveals the question word by word.
+			 * @param {HTMLElement} container - The element containing the question.
+			 */
+			function initSlowShow(container) {
+				const slowShowEnabled = localStorage.getItem('slowShowEnabled') === 'true';
+				if (!slowShowEnabled) {
+					return; // Exit if the feature is not enabled.
+				}
+				
+				const questionTextElement = container.querySelector('#question-text');
+				const questionForm = container.querySelector('#question-form');
+				
+				if (!questionTextElement || !questionForm) {
+					return; // Exit if necessary elements aren't found.
+				}
+				
+				// Hide the answers form initially.
+				questionForm.style.visibility = 'hidden';
+				
+				const words = questionTextElement.textContent.trim().split(/\s+/);
+				questionTextElement.innerHTML = ''; // Clear the original text.
+				
+				// Wrap each word in a span for individual control.
+				words.forEach(word => {
+					const span = document.createElement('span');
+					span.textContent = word + ' '; // Add space back.
+					span.classList.add('transition-opacity', 'duration-300', 'opacity-5');
+					questionTextElement.appendChild(span);
+				});
+				
+				const wordSpans = Array.from(questionTextElement.querySelectorAll('span'));
+				if (wordSpans.length === 0) {
+					questionForm.style.visibility = 'visible';
+					return; // No words to process.
+				}
+				
+				let currentWordIndex = 0;
+				
+				// Create the 'next word' button.
+				const nextWordButton = document.createElement('button');
+				nextWordButton.innerHTML = '&#9660;'; // Down arrow symbol.
+				nextWordButton.classList.add('btn', 'btn-primary', 'btn-circle', 'btn-sm', 'absolute');
+				nextWordButton.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
+				
+				// The container for the question text needs to be relative for absolute positioning of the button.
+				container.style.position = 'relative';
+				container.appendChild(nextWordButton);
+				
+				function positionButton() {
+					if (currentWordIndex >= wordSpans.length) return;
+					
+					const currentSpan = wordSpans[currentWordIndex];
+					const parentRect = container.getBoundingClientRect();
+					const spanRect = currentSpan.getBoundingClientRect();
+					
+					// Calculate position relative to the container.
+					const top = (spanRect.bottom - parentRect.top) + 5; // 5px below the word.
+					const left = (spanRect.left - parentRect.left) + (spanRect.width / 2) - (nextWordButton.offsetWidth / 2); // Centered under the word.
+					
+					nextWordButton.style.top = `${top}px`;
+					nextWordButton.style.left = `${left}px`;
+				}
+				
+				function advanceWord() {
+					if (currentWordIndex < wordSpans.length) {
+						// Reveal the current word.
+						wordSpans[currentWordIndex].classList.remove('opacity-5');
+						wordSpans[currentWordIndex].classList.add('opacity-100');
+						
+						currentWordIndex++;
+						
+						if (currentWordIndex < wordSpans.length) {
+							// If there's a next word, reposition the button.
+							positionButton();
+						} else {
+							// Last word has been revealed.
+							nextWordButton.remove();
+							questionForm.style.visibility = 'visible';
+						}
+					}
+				}
+				
+				nextWordButton.addEventListener('click', advanceWord);
+				
+				// Use a short timeout to ensure the DOM has rendered the spans before calculating their positions.
+				setTimeout(positionButton, 100);
+			}
+			
 			function checkCompletion() {
 				if (correctAnswers >= goal) {
 					completionDialog.showModal();
@@ -295,6 +385,7 @@
 			
 			if (quizArea.innerHTML.trim() !== '') {
 				applyAnswerLayout(quizArea);
+				initSlowShow(quizArea); // Modified: Initialize slow show for the first question.
 			} else {
 				generateNewQuestion();
 			}
@@ -378,6 +469,7 @@
 							quizArea.innerHTML = data.question_html;
 							requestAnimationFrame(() => {
 								applyAnswerLayout(quizArea);
+								initSlowShow(quizArea); // Modified: Initialize slow show for the new question.
 							});
 						}
 					})
