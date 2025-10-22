@@ -65,11 +65,11 @@
                                 </div>
                                 @php
                                     $answeredCount = $quiz->questions->whereNotNull('user_choice')->count();
-																		$correctCount = $quiz->questions->where('is_correct', true)->count();
-																		$wrongCount = $quiz->questions->where('is_correct', false)->count();
-																		$percentage = $answeredCount > 0 ? round(($correctCount / $answeredCount) * 100) : 0;
-																		// Modified: The goal is now read from each specific quiz object.
-																		$goal = $quiz->question_goal;
+                                    $correctCount = $quiz->questions->where('is_correct', true)->count();
+                                    $wrongCount = $quiz->questions->where('is_correct', false)->count();
+                                    $percentage = $answeredCount > 0 ? round(($correctCount / $answeredCount) * 100) : 0;
+                                    // Modified: The goal is now read from each specific quiz object.
+                                    $goal = $quiz->question_goal;
                                 @endphp
                                 
                                 <div class="my-2">
@@ -81,9 +81,13 @@
                                 </div>
                                 
                                 <p>Answered: {{ $answeredCount }} | Correct: {{ $correctCount }} | Wrong: {{ $wrongCount }} | Score: {{ $percentage }}%</p>
+                                <!-- Modified: Replaced the single action button with two specific layout options. -->
                                 <div class="card-actions justify-end">
-                                    <a href="{{ route('quiz.show', $quiz) }}" class="btn btn-primary">
-                                        {{ $answeredCount > 0 ? 'Resume Quiz' : 'Start Quiz' }}
+                                    <a href="{{ route('quiz.show', ['quiz' => $quiz, 'layout' => 'list']) }}" class="btn btn-secondary">
+                                        {{ $answeredCount > 0 ? 'Resume (List)' : 'Start (List)' }}
+                                    </a>
+                                    <a href="{{ route('quiz.show', ['quiz' => $quiz, 'layout' => 'floating']) }}" class="btn btn-primary">
+                                        {{ $answeredCount > 0 ? 'Resume (Floating)' : 'Start (Floating)' }}
                                     </a>
                                 </div>
                             </div>

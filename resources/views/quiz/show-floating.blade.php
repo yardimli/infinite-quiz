@@ -25,16 +25,8 @@
 				</label>
 				<progress id="quiz-progress" class="progress progress-primary w-full" value="{{ $correctCount }}" max="{{ $goal }}"></progress>
 				
-				{{-- Modified: The layout controls are now in a single horizontal flex container. --}}
+				{{-- Modified: The "Floating Answers" toggle has been removed as this view is dedicated to that layout. --}}
 				<div class="mt-4 border-t border-base-300 pt-4 flex flex-wrap items-center gap-x-8 gap-y-2">
-					{{-- Floating Answers Toggle --}}
-					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-4">
-							<input type="checkbox" id="floating-answers-toggle" class="checkbox checkbox-primary" />
-							<span class="label-text">Enable Floating Answers</span>
-						</label>
-					</div>
-					
 					{{-- Gaze Tracking Toggle --}}
 					<div class="form-control">
 						<label class="label cursor-pointer justify-start gap-4">
@@ -111,37 +103,7 @@
 			const goal = {{ $goal }};
 			let correctAnswers = {{ $correctCount }};
 			
-			// --- Modified: Added comprehensive layout management logic ---
-			const floatingAnswersToggle = document.getElementById('floating-answers-toggle');
-			const layoutStorageKey = 'quizLayoutFloating';
-			
-			/**
-			 * Removes all inline styles to revert the form to a standard ordered list.
-			 * @param {HTMLElement} container - The element containing the question form.
-			 */
-			function resetAnswerLayout(container) {
-				const form = container.querySelector('#question-form');
-				if (!form) return;
-				
-				const options = form.querySelectorAll('.question-option');
-				options.forEach(option => {
-					option.style.position = '';
-					option.style.top = '';
-					option.style.left = '';
-					option.style.visibility = '';
-				});
-				
-				form.style.position = '';
-				form.style.width = '';
-				form.style.height = '';
-				
-				const submitContainer = form.querySelector('button[type="submit"]').parentElement;
-				if (submitContainer) {
-					submitContainer.style.position = '';
-					submitContainer.style.left = '';
-					submitContainer.style.top = '';
-				}
-			}
+			// --- Modified: Layout management logic for floating answers only. ---
 			
 			/**
 			 * Applies absolute positioning to randomize the layout of answer options.
@@ -202,79 +164,54 @@
 			}
 			
 			/**
-			 * Checks the toggle state and applies the corresponding layout.
+			 * Applies the floating layout. The toggle and local storage have been removed.
 			 * @param {HTMLElement} container - The element containing the question form.
 			 */
 			function applyAnswerLayout(container) {
-				if (floatingAnswersToggle.checked) {
-					positionAnswers(container);
-				} else {
-					resetAnswerLayout(container);
-				}
+				positionAnswers(container);
 			}
-			
-			// Event listener to switch layouts when the checkbox is toggled.
-			floatingAnswersToggle.addEventListener('change', function() {
-				localStorage.setItem(layoutStorageKey, this.checked);
-				applyAnswerLayout(quizArea);
-			});
-			
-			// On page load, set the checkbox and layout based on stored preference or default to true.
-			const savedLayoutPreference = localStorage.getItem(layoutStorageKey);
-			floatingAnswersToggle.checked = savedLayoutPreference === null ? true : (savedLayoutPreference === 'true');
 			// --- End of layout management logic ---
 			
-			// --- Modified: Gaze Tracking Logic ---
+			// --- Gaze Tracking Logic ---
 			const gazeTrackingToggle = document.getElementById('gaze-tracking-toggle');
-			const gazeDisplayVideoToggle = document.getElementById('gaze-display-video-toggle'); // New: Selector for the video display toggle.
+			const gazeDisplayVideoToggle = document.getElementById('gaze-display-video-toggle');
 			const gazeSensibilityInput = document.getElementById('gaze-sensibility-input');
 			const gazeSensibilityValue = document.getElementById('gaze-sensibility-value');
 			const gazeOverlay = document.getElementById('gaze-overlay');
 			const gazeTrackerCanvas = document.getElementById('jeelizGlanceTrackerCanvas');
 			const gazeStorageKey = 'quizGazeTrackingEnabled';
-			const displayVideoStorageKey = 'quizGazeDisplayVideoEnabled'; // New: Storage key for video display preference.
+			const displayVideoStorageKey = 'quizGazeDisplayVideoEnabled';
 			const gazeSensibilityStorageKey = 'quizGazeTrackingSensibility';
 			let isGazeTrackerInitialized = false;
 			
-			/**
-			 * Shows the gaze overlay.
-			 */
 			function showGazeOverlay() {
 				gazeOverlay.classList.remove('hidden');
-				gazeOverlay.classList.add('flex'); // Use flex to center content.
+				gazeOverlay.classList.add('flex');
 			}
 			
-			/**
-			 * Hides the gaze overlay.
-			 */
 			function hideGazeOverlay() {
 				gazeOverlay.classList.add('hidden');
 				gazeOverlay.classList.remove('flex');
 			}
 			
-			/**
-			 * Initializes the Jeeliz Glance Tracker library.
-			 */
 			function initializeGazeTracker() {
 				if (isGazeTrackerInitialized) {
-					JEELIZGLANCETRACKER.toggle_pause(false, true); // Resume if already initialized.
+					JEELIZGLANCETRACKER.toggle_pause(false, true);
 					return;
 				}
 				
 				const sensibility = parseFloat(gazeSensibilityInput.value);
-				const isDisplayVideo = gazeDisplayVideoToggle.checked; // New: Get video display state from its checkbox.
+				const isDisplayVideo = gazeDisplayVideoToggle.checked;
 				
 				JEELIZGLANCETRACKER.init({
 					canvasId: 'jeelizGlanceTrackerCanvas',
 					NNCPath: '/js/',
 					sensibility: sensibility,
-					isDisplayVideo: isDisplayVideo, // Modified: Use the dynamic value from the checkbox.
+					isDisplayVideo: isDisplayVideo,
 					callbackTrack: function (isWatching) {
 						if (isWatching) {
-							console.log("Gaze ON");
 							hideGazeOverlay();
 						} else {
-							console.log("Gaze OFF");
 							showGazeOverlay();
 						}
 					},
@@ -284,21 +221,17 @@
 							gazeTrackingToggle.checked = false;
 							gazeTrackingToggle.disabled = true;
 							gazeSensibilityInput.disabled = true;
-							gazeDisplayVideoToggle.disabled = true; // New: Disable video toggle on error.
+							gazeDisplayVideoToggle.disabled = true;
 							alert('Could not initialize Gaze Tracker. Please ensure you have granted camera access.');
 							return;
 						}
-						console.log('Gaze Tracker is ready.');
 						isGazeTrackerInitialized = true;
-						JEELIZGLANCETRACKER.toggle_pause(false, true); // Start the tracker.
-						showGazeOverlay(); // Show overlay initially until gaze is detected.
+						JEELIZGLANCETRACKER.toggle_pause(false, true);
+						showGazeOverlay();
 					}
 				});
 			}
 			
-			/**
-			 * Pauses the gaze tracker and hides the overlay and canvas.
-			 */
 			function pauseGazeTracker() {
 				if (isGazeTrackerInitialized) {
 					JEELIZGLANCETRACKER.toggle_pause(true, true);
@@ -307,7 +240,6 @@
 				gazeTrackerCanvas.style.display = 'none';
 			}
 			
-			// Event listener for the gaze tracking toggle.
 			gazeTrackingToggle.addEventListener('change', function() {
 				localStorage.setItem(gazeStorageKey, this.checked);
 				if (this.checked) {
@@ -318,44 +250,33 @@
 				}
 			});
 			
-			// New: Event listener for the video display toggle.
 			gazeDisplayVideoToggle.addEventListener('change', function() {
 				localStorage.setItem(displayVideoStorageKey, this.checked);
-				// Refresh the page to re-initialize the tracker with the new setting.
 				location.reload();
 			});
 			
-			// Event listener for the sensibility slider.
 			gazeSensibilityInput.addEventListener('input', function() {
-				// Update the displayed value as the slider moves.
 				gazeSensibilityValue.textContent = parseFloat(this.value).toFixed(1);
 			});
 			
-			// Event listener to save the value and refresh when the user finishes changing the slider.
 			gazeSensibilityInput.addEventListener('change', function() {
 				localStorage.setItem(gazeSensibilityStorageKey, this.value);
-				// Refresh the page to re-initialize the tracker with the new value.
 				location.reload();
 			});
 			
-			// On page load, set up gaze tracking based on stored preferences.
 			const savedGazePreference = localStorage.getItem(gazeStorageKey);
 			const savedGazeSensibility = localStorage.getItem(gazeSensibilityStorageKey);
-			const savedDisplayVideoPreference = localStorage.getItem(displayVideoStorageKey); // New: Retrieve saved video display preference.
+			const savedDisplayVideoPreference = localStorage.getItem(displayVideoStorageKey);
 			
-			// Set the slider and text to the saved value, or the default.
 			if (savedGazeSensibility) {
 				const sensibility = parseFloat(savedGazeSensibility).toFixed(1);
 				gazeSensibilityInput.value = sensibility;
 				gazeSensibilityValue.textContent = sensibility;
 			}
 			
-			// New: Set the video display checkbox state from localStorage, defaulting to true.
 			gazeDisplayVideoToggle.checked = savedDisplayVideoPreference === null ? true : (savedDisplayVideoPreference === 'true');
+			gazeTrackingToggle.checked = savedGazePreference === 'true';
 			
-			gazeTrackingToggle.checked = savedGazePreference === 'true'; // Default to false.
-			
-			// Initialize if it was enabled on last visit.
 			if (gazeTrackingToggle.checked) {
 				gazeTrackerCanvas.style.display = 'block';
 				initializeGazeTracker();
@@ -372,7 +293,6 @@
 			
 			checkCompletion();
 			
-			// If a question exists on load, apply the selected layout. Otherwise, generate the first question.
 			if (quizArea.innerHTML.trim() !== '') {
 				applyAnswerLayout(quizArea);
 			} else {
@@ -456,9 +376,6 @@
 							quizArea.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
 						} else {
 							quizArea.innerHTML = data.question_html;
-							// Modified: Defer the layout calculation until after the browser has rendered the new
-							// elements. This ensures that functions like `offsetWidth` return the correct dimensions,
-							// preventing the overlapping of answer options in float mode.
 							requestAnimationFrame(() => {
 								applyAnswerLayout(quizArea);
 							});

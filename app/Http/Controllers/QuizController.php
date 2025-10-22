@@ -9,18 +9,18 @@
 
 	class QuizController extends Controller
 	{
-// ... create() method is not needed for this flow
+		// ... create() method is not needed for this flow
 
 		public function store(Request $request)
 		{
-// Modified: Added validation for the new question_goal field.
+			// Modified: Added validation for the new question_goal field.
 			$request->validate([
 				'prompt' => 'required|string|max:1000',
 				'llm_model' => 'required|string|max:255',
 				'question_goal' => 'required|integer|min:1|max:100',
 			]);
 
-// Modified: Included question_goal when creating the new quiz.
+			// Modified: Included question_goal when creating the new quiz.
 			$quiz = auth()->user()->quizzes()->create([
 				'prompt' => $request->prompt,
 				'llm_model' => $request->llm_model,
@@ -30,22 +30,36 @@
 			return redirect()->route('quiz.show', $quiz);
 		}
 
-		public function show(Quiz $quiz)
+		/**
+		 * Display a specific quiz, choosing the view based on the layout parameter.
+		 *
+		 * @param Request $request
+		 * @param Quiz $quiz
+		 * @return \Illuminate\View\View
+		 */
+		public function show(Request $request, Quiz $quiz)
 		{
 			$this->authorize('view', $quiz);
 
-// Eager load questions to calculate initial score
+			// Eager load questions to calculate initial score
 			$quiz->load('questions');
 
-// Check if there's an unanswered question first
+			// Check if there's an unanswered question first
 			$unansweredQuestion = $quiz->questions()->whereNull('user_choice')->orderBy('created_at', 'desc')->first();
 
-			if ($unansweredQuestion) {
-				return view('quiz.show', ['quiz' => $quiz, 'question' => $unansweredQuestion]);
-			}
+			// Modified: Get the desired layout from the URL query string, defaulting to 'floating'.
+			$layout = $request->query('layout', 'floating');
 
-// If no unanswered questions, the view will trigger generation
-			return view('quiz.show', ['quiz' => $quiz]);
+			$viewData = [
+				'quiz' => $quiz,
+				'question' => $unansweredQuestion,
+			];
+
+			// Modified: Determine which Blade view to render based on the layout parameter.
+			$viewName = $layout === 'list' ? 'quiz.show-list' : 'quiz.show-floating';
+
+			// The selected view will handle the case where no questions exist yet and trigger generation.
+			return view($viewName, $viewData);
 		}
 
 		public function answer(Request $request, Quiz $quiz, Question $question)
@@ -56,7 +70,7 @@
 				'answer' => 'required|string',
 			]);
 
-// Prevent answering the same question twice
+			// Prevent answering the same question twice
 			if ($question->user_choice !== null) {
 				return response()->json(['error' => 'This question has already been answered.'], 400);
 			}
@@ -68,7 +82,7 @@
 				'is_correct' => $is_correct,
 			]);
 
-// Return the result and the new total of correct answers for the quiz
+			// Return the result and the new total of correct answers for the quiz
 			return response()->json([
 				'is_correct' => $is_correct,
 				'correct_answer' => $question->correct_answer,
@@ -80,7 +94,7 @@
 		{
 			$this->authorize('update', $quiz);
 
-// Modified system prompt to ask LLM to adjust difficulty
+			// Modified system prompt to ask LLM to adjust difficulty
 			$system_prompt = "You are a quiz generation assistant. Based on the user's topic and the history of previous questions (including whether the user answered correctly), create a new, unique, multiple-choice question. The question should have 4 possible answers. Adjust the difficulty of the new question based on the user's performance; if they are answering correctly, make the next question slightly harder. If they are struggling, make it slightly easier.
 Respond ONLY with a valid JSON object in the following format:
 {\"question\": \"The text of the question\", \"options\": [\"Answer A\", \"Answer B\", \"Answer C\", \"Answer D\"], \"correct_answer\": \"The correct answer text which must be one of the options\"}";
@@ -93,7 +107,7 @@ Respond ONLY with a valid JSON object in the following format:
 				];
 			})->toArray();
 
-// Modified user prompt to include performance context
+			// Modified user prompt to include performance context
 			$chat_messages = [
 				['role' => 'user', 'content' => "The quiz topic is: '{$quiz->prompt}'. The user's performance on previous questions is as follows: " . json_encode($previous_questions) . ". Please generate the next question, adjusting the difficulty based on their performance."]
 			];
