@@ -111,13 +111,13 @@
                                 </div>
                                 
                                 <p>Answered: {{ $answeredCount }} | Correct: {{ $correctCount }} | Wrong: {{ $wrongCount }} | Score: {{ $percentage }}%</p>
-                                <!-- Modified: Replaced the single action button with two specific layout options. -->
+                                <!-- Modified: Replaced the 'Floating' layout button with the new 'Split' layout button. -->
                                 <div class="card-actions justify-end">
                                     <a href="{{ route('quiz.show', ['quiz' => $quiz, 'layout' => 'list']) }}" class="btn btn-secondary">
                                         {{ $answeredCount > 0 ? 'Resume (List)' : 'Start (List)' }}
                                     </a>
-                                    <a href="{{ route('quiz.show', ['quiz' => $quiz, 'layout' => 'floating']) }}" class="btn btn-primary">
-                                        {{ $answeredCount > 0 ? 'Resume (Floating)' : 'Start (Floating)' }}
+                                    <a href="{{ route('quiz.show', ['quiz' => $quiz, 'layout' => 'split']) }}" class="btn btn-primary">
+                                        {{ $answeredCount > 0 ? 'Resume (Split)' : 'Start (Split)' }}
                                     </a>
                                 </div>
                             </div>

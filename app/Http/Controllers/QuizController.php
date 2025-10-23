@@ -6,6 +6,8 @@
 	use App\Models\Question;
 	use App\Models\Quiz;
 	use Illuminate\Http\Request;
+	use Illuminate\Http\JsonResponse;
+	use Illuminate\View\View;
 
 	class QuizController extends Controller
 	{
@@ -39,7 +41,7 @@
 		 * @param Quiz $quiz
 		 * @return \Illuminate\View\View
 		 */
-		public function show(Request $request, Quiz $quiz)
+		public function show(Request $request, Quiz $quiz): View
 		{
 			$this->authorize('view', $quiz);
 
@@ -49,8 +51,8 @@
 			// Check if there's an unanswered question first
 			$unansweredQuestion = $quiz->questions()->whereNull('user_choice')->orderBy('created_at', 'desc')->first();
 
-			// Modified: Get the desired layout from the URL query string, defaulting to 'floating'.
-			$layout = $request->query('layout', 'floating');
+			// Modified: Get the desired layout from the URL query string, defaulting to 'list'.
+			$layout = $request->query('layout', 'list');
 
 			$viewData = [
 				'quiz' => $quiz,
@@ -58,7 +60,8 @@
 			];
 
 			// Modified: Determine which Blade view to render based on the layout parameter.
-			$viewName = $layout === 'list' ? 'quiz.show-list' : 'quiz.show-floating';
+			// The 'floating' option has been replaced with 'split'.
+			$viewName = $layout === 'split' ? 'quiz.show-split' : 'quiz.show-list';
 
 			// The selected view will handle the case where no questions exist yet and trigger generation.
 			return view($viewName, $viewData);
@@ -92,7 +95,13 @@
 			]);
 		}
 
-		public function generate(Quiz $quiz)
+		/**
+		 * Generates a new question for a quiz.
+		 *
+		 * @param Quiz $quiz
+		 * @return JsonResponse
+		 */
+		public function generate(Quiz $quiz): JsonResponse
 		{
 			$this->authorize('update', $quiz);
 
@@ -101,8 +110,8 @@
 
 			// Modified system prompt to dynamically request the number of answers and adjust difficulty.
 			$system_prompt = "You are a quiz generation assistant. Based on the user's topic and the history of previous questions (including whether the user answered correctly), create a new, unique, multiple-choice question. The question should have {$answer_count} possible answers. Adjust the difficulty of the new question based on the user's performance; if they are answering correctly, make the next question slightly harder. If they are struggling, make it slightly easier.
-	Respond ONLY with a valid JSON object in the following format:
-	{\"question\": \"The text of the question\", \"options\": [\"Answer A\", \"Answer B\", \"Answer C\", \"Answer D\"], \"correct_answer\": \"The correct answer text which must be one of the options\"}";
+Respond ONLY with a valid JSON object in the following format:
+{\"question\": \"The text of the question\", \"options\": [\"Answer A\", \"Answer B\", \"Answer C\", \"Answer D\"], \"correct_answer\": \"The correct answer text which must be one of the options\"}";
 
 			$previous_questions = $quiz->questions()->get()->map(function ($q) {
 				return [
@@ -133,11 +142,12 @@
 				'correct_answer' => $llmResult['correct_answer'],
 			]);
 
-			// Modified: Return a structured JSON object with separate question text and form HTML.
-			// This allows the frontend to place the question and answers in different containers.
+			// Modified: Return a structured JSON object with the raw question data.
+			// This allows the frontend to build the necessary HTML for any layout, fixing the AJAX bug.
 			return response()->json([
 				'question_text' => $question->question_text,
-				'form_html' => view('partials.answer-form', ['quiz' => $quiz, 'question' => $question])->render(),
+				'options' => $question->options,
+				'form_action' => route('quiz.answer', ['quiz' => $quiz, 'question' => $question]),
 			]);
 		}
 	}

@@ -25,7 +25,6 @@
 				</label>
 				<progress id="quiz-progress" class="progress progress-primary w-full" value="{{ $correctCount }}" max="{{ $goal }}"></progress>
 				
-				{{-- Modified: The "Floating Answers" toggle has been removed as this view is dedicated to the list layout. --}}
 				<div class="mt-4 border-t border-base-300 pt-4 flex flex-wrap items-center gap-x-8 gap-y-2">
 					{{-- Gaze Tracking Toggle --}}
 					<div class="form-control">
@@ -88,7 +87,6 @@
 		</div>
 	</dialog>
 	
-	{{-- Added: Include the Jeeliz Glance Tracker library from CDN. --}}
 	<script src="/js/jeelizGlanceTracker.js"></script>
 	
 	<script>
@@ -102,8 +100,6 @@
 			const completionDialog = document.getElementById('completion-dialog');
 			const goal = {{ $goal }};
 			let correctAnswers = {{ $correctCount }};
-			
-			// --- Modified: All floating layout management JavaScript has been removed for this view. ---
 			
 			// --- Gaze Tracking Logic ---
 			const gazeTrackingToggle = document.getElementById('gaze-tracking-toggle');
@@ -218,37 +214,29 @@
 			}
 			// --- End of Gaze Tracking Logic ---
 			
-			/**
-			 * Modified: Handles the "Slow Question Show" feature, now with configurable word count.
-			 * If enabled, it reveals the question word by word (or in chunks).
-			 * @param {HTMLElement} container - The element containing the question.
-			 */
 			function initSlowShow(container) {
 				const slowShowEnabled = localStorage.getItem('slowShowEnabled') === 'true';
-				// New: Get the number of words to show per click from localStorage.
 				const wordsPerClick = parseInt(localStorage.getItem('slowShowWords') || '1', 10);
 				
 				if (!slowShowEnabled) {
-					return; // Exit if the feature is not enabled.
+					return;
 				}
 				
-				const questionTextElement = container.querySelector('#question-text');
+				const questionTextElement = container.querySelector('h3');
 				const questionForm = container.querySelector('#question-form');
 				
 				if (!questionTextElement || !questionForm) {
-					return; // Exit if necessary elements aren't found.
+					return;
 				}
 				
-				// Hide the answers form initially.
 				questionForm.style.visibility = 'hidden';
 				
 				const words = questionTextElement.textContent.trim().split(/\s+/);
-				questionTextElement.innerHTML = ''; // Clear the original text.
+				questionTextElement.innerHTML = '';
 				
-				// Wrap each word in a span for individual control.
 				words.forEach(word => {
 					const span = document.createElement('span');
-					span.textContent = word + ' '; // Add space back.
+					span.textContent = word + ' ';
 					span.classList.add('transition-opacity', 'duration-300', 'opacity-5');
 					questionTextElement.appendChild(span);
 				});
@@ -256,18 +244,16 @@
 				const wordSpans = Array.from(questionTextElement.querySelectorAll('span'));
 				if (wordSpans.length === 0) {
 					questionForm.style.visibility = 'visible';
-					return; // No words to process.
+					return;
 				}
 				
 				let currentWordIndex = 0;
 				
-				// Create the 'next word' button.
 				const nextWordButton = document.createElement('button');
-				nextWordButton.innerHTML = '&#9660;'; // Down arrow symbol.
+				nextWordButton.innerHTML = '&#9660;';
 				nextWordButton.classList.add('btn', 'btn-primary', 'btn-circle', 'btn-sm', 'absolute');
 				nextWordButton.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
 				
-				// The container for the question text needs to be relative for absolute positioning of the button.
 				container.style.position = 'relative';
 				container.appendChild(nextWordButton);
 				
@@ -278,36 +264,27 @@
 					const parentRect = container.getBoundingClientRect();
 					const spanRect = currentSpan.getBoundingClientRect();
 					
-					// Calculate position relative to the container.
-					const top = (spanRect.bottom - parentRect.top) + 5; // 5px below the word.
-					const left = (spanRect.left - parentRect.left) + (spanRect.width / 2) - (nextWordButton.offsetWidth / 2); // Centered under the word.
+					const top = (spanRect.bottom - parentRect.top) + 5;
+					const left = (spanRect.left - parentRect.left) + (spanRect.width / 2) - (nextWordButton.offsetWidth / 2);
 					
 					nextWordButton.style.top = `${top}px`;
 					nextWordButton.style.left = `${left}px`;
 				}
 				
-				/**
-				 * Modified: This function now reveals a batch of words based on the 'wordsPerClick' setting.
-				 */
 				function advanceWord() {
 					if (currentWordIndex < wordSpans.length) {
-						// New: Calculate the end index for the batch of words to reveal.
 						const endIndex = Math.min(currentWordIndex + wordsPerClick, wordSpans.length);
 						
-						// New: Loop through the batch and reveal each word.
 						for (let i = currentWordIndex; i < endIndex; i++) {
 							wordSpans[i].classList.remove('opacity-5');
 							wordSpans[i].classList.add('opacity-100');
 						}
 						
-						// New: Update the current word index to the new position.
 						currentWordIndex = endIndex;
 						
 						if (currentWordIndex < wordSpans.length) {
-							// If there's a next word, reposition the button.
 							positionButton();
 						} else {
-							// Last word has been revealed.
 							nextWordButton.remove();
 							questionForm.style.visibility = 'visible';
 						}
@@ -316,7 +293,6 @@
 				
 				nextWordButton.addEventListener('click', advanceWord);
 				
-				// Use a short timeout to ensure the DOM has rendered the spans before calculating their positions.
 				setTimeout(positionButton, 100);
 			}
 			
@@ -328,11 +304,9 @@
 			
 			checkCompletion();
 			
-			// If no question exists on load, generate the first one.
 			if (quizArea.innerHTML.trim() === '') {
 				generateNewQuestion();
 			} else {
-				// Modified: Initialize slow show for the first question if it exists.
 				initSlowShow(quizArea);
 			}
 			
@@ -392,6 +366,34 @@
 				}
 			}
 			
+			/**
+			 * Modified: This function now builds the question HTML from the JSON response, fixing the AJAX bug.
+			 * @param {object} data - The JSON data for the new question.
+			 */
+			function buildQuestionHtml(data) {
+				const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+				
+				let optionsHtml = data.options.map(option => `
+					<div class="form-control question-option text-xl">
+						<label class="label cursor-pointer justify-start gap-4">
+							<input type="radio" name="answer" value="${option}" class="radio checked:bg-blue-500" required />
+							<span class="label-text">${option}</span>
+						</label>
+					</div>
+				`).join('');
+				
+				return `
+					<h3 class="text-3xl font-semibold">${data.question_text}</h3>
+					<form id="question-form" action="${data.form_action}" method="POST" class="mt-4">
+						<input type="hidden" name="_token" value="${csrfToken}">
+						<div class="space-y-4">${optionsHtml}</div>
+						<div class="mt-6">
+							<button type="submit" class="btn btn-primary">Submit Answer</button>
+						</div>
+					</form>
+				`;
+			}
+			
 			function generateNewQuestion() {
 				quizArea.classList.add('hidden');
 				feedbackArea.classList.add('hidden');
@@ -412,8 +414,8 @@
 						if (data.error) {
 							quizArea.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
 						} else {
-							quizArea.innerHTML = data.question_html;
-							// Modified: Initialize slow show for the new question.
+							// Modified: Use the new function to build HTML from JSON.
+							quizArea.innerHTML = buildQuestionHtml(data);
 							initSlowShow(quizArea);
 						}
 					})
